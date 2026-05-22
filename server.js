@@ -73,8 +73,9 @@ cache[word] = finalVideo;
 
     res.json({
       word,
-      page: fullUrl,
+      //page: fullUrl,
       video: finalVideo
+      cached: false
     });
 
   } catch(e){
