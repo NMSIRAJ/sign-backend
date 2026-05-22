@@ -1,9 +1,56 @@
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const cors = require("cors");
 
 const app = express();
+app.get("/interpret", async (req, res) => {
+
+  const text = req.query.text;
+
+  try{
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-chat",
+      messages: [
+        {
+          role: "system",
+          content: `
+Du är en expert på svenskt teckenspråk.
+Översätt meningar till teckenspråksordning.
+
+Regler:
+- Ta bort småord (ska, vill, är)
+- Subjekt först (jag, du)
+- Verb efter
+- Frågeord sist (vad, hur, var)
+- Max 5 ord
+- Svara ENDAST med ord separerade med mellanslag
+`
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ]
+    });
+
+    const result = response.choices[0].message.content;
+
+    res.json({
+      input: text,
+      output: result
+    });
+
+  } catch(e){
+    res.json({ error: "AI fel" });
+  }
+});
 app.use(cors());
 
 app.get("/video", async (req, res) => {
