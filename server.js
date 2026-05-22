@@ -11,43 +11,66 @@ app.get("/video", async (req, res) => {
   const word = req.query.word;
 
   try{
-    // 🔎 1. sök
+
     const search = await axios.get(
       "https://teckensprakslexikon.su.se/sok?q=" + word
     );
 
     const $ = cheerio.load(search.data);
 
-    // 🔗 2. hitta första teckenlänk
-    const link = $("a[href*='/tecken/']").attr("href");
+    // ✅ hitta ALLA länkar
+    let link = null;
 
-    if(!link) {
-      return res.json({ error: "ingen träff" });
+    $("a").each((i, el) => {
+
+      const href = $(el).attr("href");
+
+      // 🔥 försök hitta relevanta sidor
+      if (href && (
+          href.includes("/tecken/") ||
+          href.includes("/ord") ||
+          href.includes("/artikel")
+      )) {
+        link = href;
+        return false; // stoppa loop
+      }
+
+    });
+
+    if(!link){
+      return res.json({ error: "ingen träff (inga länkar)" });
     }
 
-    // 📄 3. öppna teckensidan
-    const page = await axios.get(
-      "https://teckensprakslexikon.su.se" + link
-    );
+    const fullUrl = "https://teckensprakslexikon.su.se" + link;
 
+    // ✅ öppna sida
+    const page = await axios.get(fullUrl);
     const $$ = cheerio.load(page.data);
 
-    // 🎬 4. hitta video
-    const video = $$("video source").attr("src");
+    // ✅ hitta video
+    let video = $$("video source").attr("src");
+
+    // fallback om annan struktur
+    if(!video){
+      video = $$("video").attr("src");
+    }
 
     if(!video){
       return res.json({ error: "ingen video hittad" });
     }
 
+    const finalVideo = video.startsWith("http")
+      ? video
+      : "https://teckensprakslexikon.su.se" + video;
+
     res.json({
-      word: word,
-      video: video.startsWith("http")
-        ? video
-        : "https://teckensprakslexikon.su.se" + video
+      word,
+      page: fullUrl,
+      video: finalVideo
     });
 
   } catch(e){
-    res.json({ error: "serverfel" });
+    res.json({ error: "serverfel", details: e.message });
   }
 
 });
