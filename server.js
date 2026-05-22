@@ -15,7 +15,9 @@ app.get("/video", async (req, res) => {
   // ✅ 1. CACHE CHECK
   if(cache[word]){
     console.log("⚡ cache hit:", word);
-
+// ✅ spara i cache
+cache[word] = finalVideo;
+``
     return res.json({
       word,
       video: cache[word],
