@@ -12,12 +12,16 @@ app.get("/video", async (req, res) => {
 
   const word = req.query.word;
 
-  try{
+  // ✅ 1. CACHE CHECK
+  if(cache[word]){
+    console.log("⚡ cache hit:", word);
 
-    const search = await axios.get(
-      "https://teckensprakslexikon.su.se/sok?q=" + word
-    );
-
+    return res.json({
+      word,
+      video: cache[word],
+      cached: true
+    });
+  }
     const $ = cheerio.load(search.data);
 
     // ✅ hitta ALLA länkar
