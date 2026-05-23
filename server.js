@@ -7,6 +7,44 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
+app.get("/spread", async (req, res) => {
+
+  const word = req.query.word;
+
+  try{
+
+    const searchUrl =
+      "https://www.spreadthesign.com/sv.se/search/?q=" + word;
+
+    const response = await axios.get(searchUrl);
+    const $ = cheerio.load(response.data);
+
+    // 🔥 hitta VIDEO (Spread använder <video>)
+    let video = $("video source").attr("src");
+
+    if(!video){
+      video = $("video").attr("src");
+    }
+
+    if(!video){
+      return res.json({ error: "ingen video hittad (spread)" });
+    }
+
+    // ✅ fixa url
+    const finalVideo = video.startsWith("http")
+      ? video
+      : "https://www.spreadthesign.com" + video;
+
+    res.json({
+      word,
+      video: finalVideo
+    });
+
+  } catch(e){
+    res.json({ error: "spread serverfel" });
+  }
+
+});
 
 app.get("/video", async (req, res) => {
 
